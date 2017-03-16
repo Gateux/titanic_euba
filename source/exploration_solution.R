@@ -1,7 +1,4 @@
-source('pull_data.R')
-
 library(ggplot2)
-library(plotly)
 library(dplyr)
 
 # VARIABLE DESCRIPTIONS:
@@ -9,15 +6,13 @@ library(dplyr)
 # (0 = No; 1 = Yes)
 # pclass          Passenger Class
 # (1 = 1st; 2 = 2nd; 3 = 3rd)
-# name            Name
 # sex             Sex
 # age             Age
 # sibsp           Number of Siblings/Spouses Aboard
 # parch           Number of Parents/Children Aboard
-# ticket          Ticket Number
 # fare            Passenger Fare
-# cabin           Cabin
 # embarked        Port of Embarkation
+# ship            Company ship number
 # (C = Cherbourg; Q = Queenstown; S = Southampton)
 # 
 # SPECIAL NOTES:
@@ -42,48 +37,40 @@ library(dplyr)
 # travelled with very close friends or neighbors in a village, however,
 # the definitions do not support such relations.
 
-train %>% glimpse
 
-train$cabin %>% table
+
+train_70 <- train %>% filter(data_status == "Training")
+# Here we go, lets look at the variables in the table!
+
 ##### Target ########
+# How many people died?
 train_70$survived %>% table
+
+# Whats survival ratio?
 train_70$survived %>% mean
 train_70$survived %>% var
 
-############# Cabin ####### 
-# cabin section first letter
-table(train$cabin %>% substr(.,1,1), train$survived)
-# cabin section first number
-table(train$cabin %>% substr(.,2,2), train$survived)
-(train$cabin == "\"\"") %>% table
-# probably not, too many missings, exclude this column
-
-############# Ticket  ##### 
-train$ticket %>% head
-train$ticket %>% table
-train$ticket %>% as.integer %>% sort
-
-######## Name? ####
-train$name
-
-
-train_70 <- train_70 %>% select(-passengerid, -ticket, -cabin)
+# Which ships crashed?
+table(train_70$ship, train_70$survived)
 
 ####### Embarked ####
 train_70$embarked %>% table
 table(train_70$embarked, train_70$survived)
 table(train_70$embarked, train_70$survived) %>% summary()
 
-train_70$embarked[train_70$embarked == "\"\""] <- NA
+train %>% 
+  mutate(embarked_adj = ifelse())
+
+train_70 %>% 
+  group_by(Embarked) %>% 
+  summarise(m = mean(Survived), n_people = n()) %>% 
+  ggplot(. , aes(y = m, x = factor(Embarked))) +
+  geom_point(aes(size = n_people), color = , alpha = 0.5)
+
+train_70$embarked[is.na(train_70$embarked)] <- NA
 # chi-sq test of independence
 table(train_70$embarked, train_70$survived) %>% summary()
 # rejecting null hypothesis of independence between embarked and survived
-
-train_70 %>% 
-  group_by(embarked) %>% 
-  summarise(m = mean(survived), v = var(survived), s = n()) %>% 
-  ggplot(. , aes(y = m, ymin = m-v, ymax = m + v, x = factor(embarked), size = s)) +
-  geom_pointrange(color = c("#7EC0EE"), alpha = 0.5)
 
 # mutualizing NA to the most common value
 train_70$embarked[is.na(train_70$embarked)] <- "S"
@@ -100,10 +87,10 @@ train_70[train_70$survived == 1, ]$fare %>%
 train_70[train_70$survived == 0, ]$fare %>% 
   quantile(probs = c(0, 0.01, 0.05, seq(0.1, 0.90, 0.1), 0.95, 0.99, 1)) 
 
-p <- train_70 %>% 
-  ggplot(aes(x = fare,  color = factor(survived))) +
+train_70 %>% 
+  ggplot(aes(x = Fare,  color = factor(Survived))) +
   geom_density() 
-ggplotly(p)
+
 
 ######### Age ##############
 train_70$age %>% summary

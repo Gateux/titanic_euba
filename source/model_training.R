@@ -1,5 +1,5 @@
-log_model_1 <- glm(data = train_70_adj,
-                   formula = survived ~ sex  + pclass + sibsp + embarked + fare + parch,
+log_model_1 <- glm(data = train_70,
+                   formula = Survived ~ Sex  + SibSp + Embarked + Fare + Parch,
                    family = binomial())
 
 summary(log_model_1)
