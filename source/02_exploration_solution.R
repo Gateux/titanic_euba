@@ -42,6 +42,9 @@ library(dplyr)
 train_70 <- train %>% filter(data_status == "Training")
 # Here we go, lets look at the variables in the table!
 
+library(Amelia)
+missmap(training.data.raw, main = "Missing values vs observed")
+
 ##### Target ########
 # How many people died?
 train_70$survived %>% table
@@ -50,7 +53,7 @@ train_70$survived %>% table
 train_70$survived %>% mean
 train_70$survived %>% var
 
-# Which ships crashed?
+# Which ship crashed?
 table(train_70$ship, train_70$survived)
 
 ####### Embarked ####
@@ -62,9 +65,9 @@ train %>%
   mutate(embarked_adj = ifelse())
 
 train_70 %>% 
-  group_by(Embarked) %>% 
-  summarise(m = mean(Survived), n_people = n()) %>% 
-  ggplot(. , aes(y = m, x = factor(Embarked))) +
+  group_by(embarked) %>% 
+  summarise(m = mean(survived), n_people = n()) %>% 
+  ggplot(. , aes(y = m, x = factor(embarked))) +
   geom_point(aes(size = n_people), color = , alpha = 0.5)
 
 train_70$embarked[is.na(train_70$embarked)] <- NA
