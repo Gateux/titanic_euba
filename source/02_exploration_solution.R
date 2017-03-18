@@ -37,13 +37,14 @@ library(dplyr)
 # travelled with very close friends or neighbors in a village, however,
 # the definitions do not support such relations.
 
-
-
 train_70 <- train %>% filter(data_status == "Training")
 # Here we go, lets look at the variables in the table!
 
+# See map of missings
 library(Amelia)
-missmap(training.data.raw, main = "Missing values vs observed")
+missmap(train_70, main = "Missing values vs observed")
+
+
 
 ##### Target ########
 # How many people died?
@@ -51,32 +52,42 @@ train_70$survived %>% table
 
 # Whats survival ratio?
 train_70$survived %>% mean
-train_70$survived %>% var
 
 # Which ship crashed?
 table(train_70$ship, train_70$survived)
 
 ####### Embarked ####
-train_70$embarked %>% table
+train_70$embarked %>% table # is equal to table(train_70$embarked)
 table(train_70$embarked, train_70$survived)
-table(train_70$embarked, train_70$survived) %>% summary()
 
-train %>% 
-  mutate(embarked_adj = ifelse())
-
-train_70 %>% 
-  group_by(embarked) %>% 
-  summarise(m = mean(survived), n_people = n()) %>% 
-  ggplot(. , aes(y = m, x = factor(embarked))) +
-  geom_point(aes(size = n_people), color = , alpha = 0.5)
-
-train_70$embarked[is.na(train_70$embarked)] <- NA
+# changing blank values to most common 
+# Have you noticed we changed it also for our whole dataset? Can you guess why?
+train_70$embarked[train_70$embarked == ""] <- "S"
+train$embarked[train$embarked == ""] <- "S"
+table(train_70$embarked, train_70$survived)
 # chi-sq test of independence
 table(train_70$embarked, train_70$survived) %>% summary()
 # rejecting null hypothesis of independence between embarked and survived
 
-# mutualizing NA to the most common value
-train_70$embarked[is.na(train_70$embarked)] <- "S"
+# OK, it looks like this variable is not so useful, lets visualize little bit
+
+# Graph
+
+# look at so differences between groups!
+train_70 %>% 
+  group_by(embarked) %>% 
+  summarise(m = mean(survived), n_people = n()) %>% 
+  ggplot(. , aes(y = m, x = factor(embarked))) +
+  geom_point(aes(size = n_people), color = c("#00BFFF"), alpha = 0.5)
+
+
+# or no? don't forget to thing about the scale
+train_70 %>% 
+  group_by(embarked) %>% 
+  summarise(m = mean(survived), n_people = n()) %>% 
+  ggplot(. , aes(y = m, x = factor(embarked))) +
+  geom_point(aes(size = n_people), color = c("#00BFFF"), alpha = 0.5) +
+  ylim(0, 1)
 
 ########## Fare #####
 train_70$fare %>% hist

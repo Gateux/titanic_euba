@@ -1,7 +1,10 @@
+# Load necessary libraries
+library(dplyr)
+
 # Check where we are
 getwd()
 # Load training data
-train <- read.csv("data/train.csv")
+train <- read.csv("data/data_titanic_adj.csv", stringsAsFactors = FALSE)
 
 # `%>%` works as a pipe and forward object on the left side to function on the right side 
 # e.g. x %>% f(y) is same as f(x, y)
@@ -10,6 +13,9 @@ train <- read.csv("data/train.csv")
 
 # glimpse is short description of table
 train %>% glimpse
+
+# changing age from double precision to integer
+train$age <- train$age %>% as.integer
 
 #### Training vs. Validation ####
 set.seed(58742) # to fix randomizer
