@@ -1,3 +1,5 @@
+library(dplyr)
+
 # Generating more data
 train <- titanic::titanic_train %>% 
   select(-Name, -Cabin, -Ticket, -PassengerId) %>% 
@@ -10,10 +12,10 @@ set.seed(5987125)
 
 train_sample <- train %>% 
   sample_n(9000, replace = TRUE) %>% 
-  mutate(Survived = 0, Ship = round(runif(9000, 1, 10))) 
+  mutate(Survived = 1, Ship = round(runif(9000, 1, 10))) 
   
 train_sample[train_sample$Ship == 7, "Survived"] <-
-  sample(titanic_train$Survived, nrow(train_sample[train_sample$Ship == 7, ]), replace = TRUE)
+  sample(train$Survived, nrow(train_sample[train_sample$Ship == 7, ]), replace = TRUE)
 
 train <- rbind(train, train_sample)
 rm(train_sample)

@@ -20,6 +20,12 @@ Source: CRAN
 Version: 0.5-1
 Hash: 375869004db963f9915f2b8a49b4a718
 
+Package: GGally
+Source: CRAN
+Version: 1.3.0
+Hash: aa3ddf58583c7c8003a3c35493a2fe2e
+Requires: RColorBrewer, ggplot2, gtable, plyr, progress, reshape
+
 Package: R6
 Source: CRAN
 Version: 2.2.0
@@ -136,6 +142,11 @@ Source: CRAN
 Version: 0.5
 Hash: 463550cf44fb6f0a2359368f42eebe62
 
+Package: mnormt
+Source: CRAN
+Version: 1.5-5
+Hash: d0d5efbb1fb26d2dc5f9394c223084b5
+
 Package: munsell
 Source: CRAN
 Version: 0.4.3
@@ -166,11 +177,35 @@ Version: 1.8.4
 Hash: ce3897d2ea6dabdb2c0a217b25f5fe99
 Requires: Rcpp
 
+Package: prettyunits
+Source: CRAN
+Version: 1.0.2
+Hash: 49286102a855640daaa38eafe8b1ec30
+Requires: assertthat, magrittr
+
+Package: progress
+Source: CRAN
+Version: 1.1.2
+Hash: ceef88c244d792a874bdacf72b6a30da
+Requires: R6, prettyunits
+
+Package: psych
+Source: CRAN
+Version: 1.6.12
+Hash: 9d4b62cad4b931e1726cb0b0a9bc55fe
+Requires: mnormt
+
 Package: purrr
 Source: CRAN
 Version: 0.2.2
 Hash: e06b50a541f3a0965edd8e8533ff28ac
 Requires: BH, Rcpp, dplyr, lazyeval, magrittr
+
+Package: reshape
+Source: CRAN
+Version: 0.8.6
+Hash: 1f1ab97e8341bf4dcf16d60d8434b530
+Requires: plyr
 
 Package: reshape2
 Source: CRAN

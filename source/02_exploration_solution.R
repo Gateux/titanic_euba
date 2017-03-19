@@ -40,13 +40,16 @@ library(dplyr)
 train_70 <- train %>% filter(data_status == "Training")
 # Here we go, lets look at the variables in the table!
 
+train_70 %>% glimpse
+
 # See map of missings
-library(Amelia)
-missmap(train_70, main = "Missing values vs observed")
+Amelia::missmap(train_70, main = "Missing values vs observed")
 
-
+# Scatterplot Matrix
+GGally::ggpairs(train_70)
 
 ##### Target ########
+## Advice: What is the structure of the variable? or
 # How many people died?
 train_70$survived %>% table
 
@@ -57,17 +60,23 @@ train_70$survived %>% mean
 table(train_70$ship, train_70$survived)
 
 ####### Embarked ####
+
+# Again, What is the structure of the variable?
 train_70$embarked %>% table # is equal to table(train_70$embarked)
 table(train_70$embarked, train_70$survived)
 
-# changing blank values to most common 
+# look there are som blank values, changing them to most common 
 # Have you noticed we changed it also for our whole dataset? Can you guess why?
 train_70$embarked[train_70$embarked == ""] <- "S"
 train$embarked[train$embarked == ""] <- "S"
+
+# Frequency analysis
 table(train_70$embarked, train_70$survived)
-# chi-sq test of independence
+# chi-sq test of independence or 
+# Does it matter where the people embarked for their survival depends on it? 
 table(train_70$embarked, train_70$survived) %>% summary()
-# rejecting null hypothesis of independence between embarked and survived
+# rejecting null hypothesis of independence between embarked and survived so 
+# it looks like it does not depends on embarked place if people survived
 
 # OK, it looks like this variable is not so useful, lets visualize little bit
 
@@ -80,8 +89,12 @@ train_70 %>%
   ggplot(. , aes(y = m, x = factor(embarked))) +
   geom_point(aes(size = n_people), color = c("#00BFFF"), alpha = 0.5)
 
-
-# or no? don't forget to thing about the scale
+# or no? don't forget to think about the scale!
+## Advice: Scale
+# It is really important on how you are showing data and to whom and 
+# which type of analysis you are showing.
+# For our case it make sense to use fixed scale of (0, 1) as we are talking 
+# about probability of surviving
 train_70 %>% 
   group_by(embarked) %>% 
   summarise(m = mean(survived), n_people = n()) %>% 
@@ -90,58 +103,146 @@ train_70 %>%
   ylim(0, 1)
 
 ########## Fare #####
+# What is the structure of the fare? DO you have some hyphothesis?
 train_70$fare %>% hist
 train_70$fare %>% density %>% plot
 
+# What is the structure of the fare for those who survived vs. not survived?
 train_70[train_70$survived == 1, ]$fare %>% density %>% plot
 train_70[train_70$survived == 0, ]$fare %>% density %>% plot
 
-train_70[train_70$survived == 1, ]$fare %>% 
-  quantile(probs = c(0, 0.01, 0.05, seq(0.1, 0.90, 0.1), 0.95, 0.99, 1)) 
-train_70[train_70$survived == 0, ]$fare %>% 
-  quantile(probs = c(0, 0.01, 0.05, seq(0.1, 0.90, 0.1), 0.95, 0.99, 1)) 
-
+# Maybe better in one graph
 train_70 %>% 
-  ggplot(aes(x = Fare,  color = factor(Survived))) +
+  ggplot(aes(x = fare,  color = factor(survived))) +
   geom_density() 
+
+# Lets try to create simple model
+train_70 %>% 
+  ggplot(aes(x = fare, y = survived)) + 
+  geom_point(shape=1) +
+  stat_smooth(method="glm", method.args=list(family="binomial"), se=FALSE)
+
+## Advice: Capping
+# It seems we have no observations between ticket price of 300 and maximum 500.
+# What do you think how many people paid 500? Probably not so much.
+# Don't you think it could be only coincidence that those people survived or not?
+# We are using statisical methods and they are based on law of big numbers, 
+# so we should not rely on small group observations. We will make assumptions 
+# that those people paid 300 instead of maximum of 500. Second assumptions could be 
+# we will exclude those people from our dataset. You as a modeler need to decide.
+#
+# How to identify if making assumptions only about maximum value is right?
+# Usuallu taking down the maximum is not enough, we will take down whole 1 or 5% of highest data
+#
+# Same could apply to minimum values. We will not focus on them for now.
+train_70$fare[train_70$fare >= quantile(train_70$fare, 0.99)] <- quantile(train_70$fare, 0.99)
+
+# Lets see what have changed...looks like trend is less stronger
+train_70 %>% 
+  ggplot(aes(x = fare, y = survived)) + 
+  geom_point(shape=1) +
+  stat_smooth(method="glm", method.args=list(family="binomial"), se=FALSE)
+
+######### PClass - socioeconomic status ##########
+
+# What is the structure of the socioeconomic status?
+train_70$pclass %>% table(useNA = 'ifany')
+
+# people with lower status died, look only 3th class is significant
+table(train_70$pclass, train_70$survived)
+# rejecting null hypothesis, factors are not independent, very strong rejection!
+table(train_70$pclass, train_70$survived) %>% summary
+
+# Hey! Btw what exactly does it mean to be in specific economic class? 
+# Do you think it might be similarity with the price people paid for the ticket?
+cor(train_70$pclass, train_70$fare) # not perfect, but quite good correlation
+cor(train_70$pclass, train_70$fare, method = "kendall")
+
+# What do you remember about assumptions of using GLM model?
+
+
+
+
+# (daj sem predpoklady a vypichni ze aha predictory by mali byt nezavisle)
+
+
+
+
+
+
+
+
+
+
+# pclass vs. fares
+# people from 1th class if they paid much more for the ticket, looks they survived
+train_70 %>% 
+  ggplot(aes(x = fare, color = factor(survived))) +
+  geom_density() +
+  facet_wrap(~ pclass) +
+  coord_flip()
 
 
 ######### Age ##############
+# What is the structure of the age?
 train_70$age %>% summary
-# we have missings in age, 
-# age seems to be stong predictor we could create model for estimating age
 
-train_70$age %>% 
-  quantile(probs = c(0, 0.01, 0.05, seq(0.1, 0.90, 0.2), 0.95, 0.99, 1), na.rm = TRUE) 
-
-train_70$age %>% density %>% plot
-
+train_70$age %>% density() %>% plot
+# hops! we have missings in age! THis is not good for modelling, need to solve somehow 
+train_70$age %>% density(na.rm = TRUE) %>% plot
+# see trends, how old people usually survived?
 train_70 %>% 
-  ggplot(aes(y = age,  x = factor(survived))) +
-  geom_violin()
-
-p <- train_70 %>% 
   ggplot(aes(x = age,  color = factor(survived))) +
   geom_density()
-ggplotly(p)
 
-# age + sex
+# age seems to be stong predictor we could create model for estimating age, 
+# for now we will only imputate it using mean value
+train_70$age[is.na(train_70$age)] <- mean(train_70$age, na.rm = TRUE)
+train$age[is.na(train$age)] <- mean(train$age, na.rm = TRUE)
+
+# See how it changed our density graph
+train_70 %>% 
+  ggplot(aes(x = age,  color = factor(survived))) +
+  geom_density()
+# Ou, thats huge change! Keep it in your mind when you are modelling 
+# if you possibbly didn't bring some trend you woudn't want to
+
+######### Sex ###########
+train_70$sex %>% table(useNA = 'ifany')
+table(train_70$sex, train_70$survived)
+
+# rejecting null hypothesis, factors are not independent, very strong rejection!
+table(train_70$sex, train_70$survived) %>% summary
+
+train_70 %>% 
+  ggplot(aes(x = sex,  y = factor(survived))) +
+  geom_jitter() +
+  geom_density(alpha = 0.3) 
+
+# Lets try to think differently , sex alone is not strong predictive variable, 
+# but with combination with age could be.
+## age + sex
 # counts
-p <- train_70 %>% 
+train_70 %>% 
   ggplot(aes(x = age,  fill = factor(survived))) +
   geom_histogram() +
   facet_grid( ~ sex)
-ggplotly(p)
 
 # density, nice trends, possible interaction?
-p <- train_70 %>% 
+train_70 %>% 
   ggplot(aes(x = age,  fill = factor(survived))) +
-  geom_histogram(alpha = 0.6) +
+  geom_density(alpha = 0.3) +
   facet_grid( ~ sex) +
   theme_classic()
-ggplotly(p)
 
-train_70_adj <- train_70 %>% 
+# simple model
+train_70 %>% 
+  ggplot(aes(x = age, y = survived)) + 
+  geom_point(shape=1) +
+  stat_smooth(method="glm", method.args=list(family="binomial"), se=FALSE) +
+  facet_grid( ~ sex)
+
+train_70 <- train_70 %>% 
   mutate(age_cat = case_when(is.na(.$age) ~ "Missing",
                              .$age <= 15 ~ "1 - babies",
                              .$age > 15 & .$age <= 22 ~ "2 - youngsters",
@@ -150,6 +251,8 @@ train_70_adj <- train_70 %>%
                              .$age > 50 ~ "5 - olders"),
          age_mutualize = ifelse(is.na(age), mean(age, na.rm = TRUE), age)
   )
+
+
 val_20 <- val_20 %>% 
   mutate(age_cat = case_when(is.na(.$age) ~ "Missing",
                              .$age <= 15 ~ "1 - babies",
@@ -162,19 +265,11 @@ val_20 <- val_20 %>%
 
 train_70_adj$age_cat %>% table(train_70_adj$survived)
 train_70_adj$age_cat %>% table(train_70_adj$survived) %>% summary
-######### Sex ###########
-train_70$sex %>% table(useNA = 'ifany')
-table(train_70$sex, train_70$survived)
 
-# rejecting null hypothesis, factors are independent, very strong rejection!
-table(train_70$sex, train_70$survived) %>% summary
 
-p <- train_70 %>% 
-  ggplot(aes(x = sex,  y = factor(survived))) +
-  geom_jitter() +
-  geom_density(alpha = 0.3) 
-ggplotly(p)
 
+
+#### BOnus - you can play with it, maybe you will find out something
 ########### Parch/Sibsp - parents/siblings aboard #############
 train_70$parch %>% table(useNA = 'ifany')
 train_70$sibsp %>% table(useNA = 'ifany')
@@ -183,40 +278,6 @@ train_70$parch %>% table(train_70$survived)
 train_70$parch %>% table(train_70$survived) %>% summary
 
 train_70 %>% filter(parch<3) %>% select(parch, survived) %>% table %>% summary
-
-train_70_adj <- 
-  train_70 %>% 
-  mutate(parch_adj = ifelse(parch >2, 0, parch))
-
-train_70$sibsp %>% table(train_70$survived)
-train_70$sibsp %>% table(train_70$survived) %>% summary
-
-train_70 %>% filter(sibsp<2) %>% select(sibsp, survived) %>% table %>% summary
-
-train_70_adj <- 
-  train_70 %>% 
-  mutate(sibsp_adj = ifelse(sibsp >2, 0, sibsp))
-######### PClass - socioeconomic status ##########
-train_70$pclass %>% table(useNA = 'ifany')
-
-# people with lower status died, look only 3th class is significant
-table(train_70$pclass, train_70$survived)
-
-# pclass vs. fares
-# people from 1th class if they paid much more for the ticket, looks they survived
-p <- train_70 %>% 
-  ggplot(aes(x = fare, color = factor(survived))) +
-  geom_density() +
-  facet_wrap(~ pclass) +
-  coord_flip()
-ggplotly(p)
-
-
-train %>% 
-  mutate(deck = substr(cabin, 1, 1)) %T>% # odskocim si vypisat tabulku
-  View %>% # a pokracujem dalej 
-  select(deck, survived) %>% table()
-
 
 
 
