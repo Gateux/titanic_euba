@@ -28,7 +28,7 @@ function(input, output, session) {
     paste(
       h4("Recomended price: "), 
       h3(
-        paste0("$", round(1 - prediction(), 2) * input$fare) # main element, rounded probability of Having claim
+        paste0("$", round(1 - prediction(), 2) * input$sum_insured) # price as sum insured * probability of having claim
       )
     )
   })
