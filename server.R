@@ -26,9 +26,9 @@ function(input, output, session) {
   
   output$price1<- renderText({
     paste(
-      h4("Recomended price: "), 
+      h4("Recommended price: "), 
       h3(
-        paste0("$", round(1 - prediction(), 2) * input$sum_insured) # price as sum insured * probability of having claim
+        paste0("£", round(1 - prediction(), 2) * input$sum_insured) # price as sum insured * probability of having claim
       )
     )
   })
