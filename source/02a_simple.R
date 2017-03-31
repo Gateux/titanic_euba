@@ -262,10 +262,11 @@ shiny::shinyAppDir("./")
 
 #### Bonus Exercises: ####
 # 1)
-# UW gives you advise, that 
+# Try to group age feature into 5 groups (babies, youngters, adults-1, adults-2, pensioner) and 
+# fit new model. Does it helps to imporve the model?
 
 # 2)
-# Underwriter are not able to use sex in European Union because this is discrimination. 
+# Underwriter are not able to use sex feature in European Union because this is a discrimination. 
 # Try to figure out how to improve model which is without sex feature.
 
 

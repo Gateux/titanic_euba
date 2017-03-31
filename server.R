@@ -11,7 +11,10 @@ function(input, output, session) {
     input_vars <- data.frame(sex = input$sex,
                              pclass = input$pclass,
                              fare = input$fare,
-                             age = input$age)
+                             age = input$age,
+                             sibsp = input$sibsp,
+                             parch = input$parch,
+                             embarked = input$embarked)
     
     # prediction function: probability of NOT having a claim
     predict(model_final, input_vars, type = "response")
