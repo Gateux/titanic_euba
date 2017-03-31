@@ -10,7 +10,9 @@ function(input, output, session) {
     # inputs from the screen ui
     input_vars <- data.frame(sex = input$sex,
                              pclass = input$pclass,
-                             fare = input$fare)
+                             fare = input$fare,
+                             age = input$age)
+    
     # prediction function: probability of NOT having a claim
     predict(model_final, input_vars, type = "response")
   })
@@ -19,7 +21,7 @@ function(input, output, session) {
     paste(
       h4("Probability of having claim: "), 
       h3(
-        round(1 - prediction(), 2) # main element, rounded probability of Having claim
+        round(1 - prediction(), 3) # main element, rounded probability of Having claim
         )
       )
   })
@@ -28,7 +30,7 @@ function(input, output, session) {
     paste(
       h4("Recommended price: "), 
       h3(
-        paste0("£", round(1 - prediction(), 2) * input$sum_insured) # price as sum insured * probability of having claim
+        paste0("£", round(1 - prediction(), 3) * input$sum_insured) # price as sum insured * probability of having claim
       )
     )
   })

@@ -39,6 +39,7 @@ library(dplyr)
 
 train_70 <- train %>% filter(data_status == "Training")
 # Here we go, lets look at the variables in the table!
+
 train_70 %>% glimpse
 
 # See map of missings
@@ -49,98 +50,14 @@ GGally::ggpairs(train_70)
 
 ##### Target ########
 ## Advice: What is the structure of the variable? or
-# How many people had a claim?
+# How many people died?
 train_70$survived %>% table
 
-# Whats "survival ratio"?
+# Whats survival ratio?
 train_70$survived %>% mean
 
 # Which ship crashed?
 table(train_70$ship, train_70$survived)
-
-######### Age ##############
-# What is the structure of the age?
-train_70$age %>% summary
-
-train_70$age %>% density() %>% plot
-# hops! we have missings in age! THis is not good for modelling, need to solve somehow 
-train_70$age %>% density(na.rm = TRUE) %>% plot
-# see trends, how old people usually survived?
-train_70 %>% 
-  ggplot(aes(x = age,  color = factor(survived))) +
-  geom_density()
-
-# age seems to be stong predictor we could create model for estimating age, 
-# for now we will only imputate it using mean value
-train_70$age[is.na(train_70$age)] <- mean(train_70$age, na.rm = TRUE)
-train$age[is.na(train$age)] <- mean(train$age, na.rm = TRUE)
-
-# See how it changed our density graph
-train_70 %>% 
-  ggplot(aes(x = age,  color = factor(survived))) +
-  geom_density()
-# Ou, thats huge change! Keep it in your mind when you are modelling 
-# if you possibbly didn't bring some trend you woudn't want to
-
-######### Sex ###########
-train_70$sex %>% table(useNA = 'ifany')
-table(train_70$sex, train_70$survived)
-
-# rejecting null hypothesis, factors are not independent, very strong rejection!
-table(train_70$sex, train_70$survived) %>% summary
-
-train_70 %>% 
-  ggplot(aes(x = sex,  y = factor(survived))) +
-  geom_jitter() +
-  geom_density(alpha = 0.3) 
-
-# Lets try to think differently , sex alone is not strong predictive variable, 
-# but with combination with age could be.
-## age + sex
-# counts
-train_70 %>% 
-  ggplot(aes(x = age,  fill = factor(survived))) +
-  geom_histogram() +
-  facet_grid( ~ sex)
-
-# density, nice trends, possible interaction?
-train_70 %>% 
-  ggplot(aes(x = age,  fill = factor(survived))) +
-  geom_density(alpha = 0.3) +
-  facet_grid( ~ sex) +
-  theme_classic()
-
-# simple model
-train_70 %>% 
-  ggplot(aes(x = age, y = survived)) + 
-  geom_point(shape=1) +
-  stat_smooth(method="glm", method.args=list(family="binomial"), se=FALSE) +
-  facet_grid( ~ sex)
-
-train_70 <- train_70 %>% 
-  mutate(age_cat = case_when(is.na(.$age) ~ "Missing",
-                             .$age <= 15 ~ "1 - babies",
-                             .$age > 15 & .$age <= 22 ~ "2 - youngsters",
-                             .$age > 22 & .$age <= 35 ~ "3 - adults - 1",
-                             .$age > 35 & .$age <= 50 ~ "4 - adults - 2",
-                             .$age > 50 ~ "5 - olders"),
-         age_mutualize = ifelse(is.na(age), mean(age, na.rm = TRUE), age)
-  )
-
-
-val_20 <- val_20 %>% 
-  mutate(age_cat = case_when(is.na(.$age) ~ "Missing",
-                             .$age <= 15 ~ "1 - babies",
-                             .$age > 15 & .$age <= 22 ~ "2 - youngsters",
-                             .$age > 22 & .$age <= 35 ~ "3 - adults - 1",
-                             .$age > 35 & .$age <= 50 ~ "4 - adults - 2",
-                             .$age > 50 ~ "5 - olders"),
-         age_mutualize = ifelse(is.na(age), mean(age, na.rm = TRUE), age)
-  )
-
-train_70_adj$age_cat %>% table(train_70_adj$survived)
-train_70_adj$age_cat %>% table(train_70_adj$survived) %>% summary
-
 
 ####### Embarked ####
 
@@ -243,20 +160,6 @@ cor(train_70$pclass, train_70$fare, method = "kendall")
 
 # What do you remember about assumptions of using GLM model?
 
-
-
-
-# (daj sem predpoklady a vypichni ze aha predictory by mali byt nezavisle)
-
-
-
-
-
-
-
-
-
-
 # pclass vs. fares
 # people from 1th class if they paid much more for the ticket, looks they survived
 train_70 %>% 
@@ -266,6 +169,88 @@ train_70 %>%
   coord_flip()
 
 
+######### Age ##############
+# What is the structure of the age?
+train_70$age %>% summary
+
+train_70$age %>% density() %>% plot
+# hops! we have missings in age! THis is not good for modelling, need to solve somehow 
+train_70$age %>% density(na.rm = TRUE) %>% plot
+# see trends, how old people usually survived?
+train_70 %>% 
+  ggplot(aes(x = age,  color = factor(survived))) +
+  geom_density()
+
+# age seems to be stong predictor we could create model for estimating age, 
+# for now we will only imputate it using mean value
+train_70$age[is.na(train_70$age)] <- mean(train_70$age, na.rm = TRUE)
+train$age[is.na(train$age)] <- mean(train$age, na.rm = TRUE)
+
+# See how it changed our density graph
+train_70 %>% 
+  ggplot(aes(x = age,  color = factor(survived))) +
+  geom_density()
+# Ou, thats huge change! Keep it in your mind when you are modelling 
+# if you possibbly didn't bring some trend you woudn't want to
+
+######### Sex ###########
+train_70$sex %>% table(useNA = 'ifany')
+table(train_70$sex, train_70$survived)
+
+# rejecting null hypothesis, factors are not independent, very strong rejection!
+table(train_70$sex, train_70$survived) %>% summary
+
+train_70 %>% 
+  ggplot(aes(x = sex,  y = factor(survived))) +
+  geom_jitter() +
+  geom_density(alpha = 0.3) 
+
+# Lets try to think differently , sex alone is not strong predictive variable, 
+# but with combination with age could be.
+## age + sex
+# counts
+train_70 %>% 
+  ggplot(aes(x = age,  fill = factor(survived))) +
+  geom_histogram() +
+  facet_grid( ~ sex)
+
+# density, nice trends, possible interaction?
+train_70 %>% 
+  ggplot(aes(x = age,  fill = factor(survived))) +
+  geom_density(alpha = 0.3) +
+  facet_grid( ~ sex) +
+  theme_classic()
+
+# simple model
+train_70 %>% 
+  ggplot(aes(x = age, y = survived)) + 
+  geom_point(shape=1) +
+  stat_smooth(method="glm", method.args=list(family="binomial"), se=FALSE) +
+  facet_grid( ~ sex)
+
+train_70 <- train_70 %>% 
+  mutate(age_cat = case_when(is.na(.$age) ~ "Missing",
+                             .$age <= 15 ~ "1 - babies",
+                             .$age > 15 & .$age <= 22 ~ "2 - youngsters",
+                             .$age > 22 & .$age <= 35 ~ "3 - adults - 1",
+                             .$age > 35 & .$age <= 50 ~ "4 - adults - 2",
+                             .$age > 50 ~ "5 - olders"),
+         age_mutualize = ifelse(is.na(age), mean(age, na.rm = TRUE), age)
+  )
+
+
+val_20 <- val_20 %>% 
+  mutate(age_cat = case_when(is.na(.$age) ~ "Missing",
+                             .$age <= 15 ~ "1 - babies",
+                             .$age > 15 & .$age <= 22 ~ "2 - youngsters",
+                             .$age > 22 & .$age <= 35 ~ "3 - adults - 1",
+                             .$age > 35 & .$age <= 50 ~ "4 - adults - 2",
+                             .$age > 50 ~ "5 - olders"),
+         age_mutualize = ifelse(is.na(age), mean(age, na.rm = TRUE), age)
+  )
+
+train_70_adj$age_cat %>% table(train_70_adj$survived)
+train_70_adj$age_cat %>% table(train_70_adj$survived) %>% summary
 
 
 
