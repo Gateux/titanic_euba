@@ -1,6 +1,7 @@
-library(ggplot2)
-library(dplyr)
-library(shiny)
+# load libraries
+if (!require("dplyr")) install.packages("dplyr")
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("shiny")) install.packages("shiny")
 
 # Running the pricing app
 shiny::shinyAppDir("./")
