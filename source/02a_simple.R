@@ -66,8 +66,35 @@ train_70$survived %>% table # same as table(train_70$survived)
 ### Exercise:
 # Which ship crashed?
 
+#### ***Modeling*** ####
+# This is our basic model from Underwriters
+log_model_1 <- glm(data = train_70,
+                   formula = survived ~ sex + age,
+                   family = binomial())
 
-####### ***Features Exploration ***##############
+# Information about model
+summary(log_model_1) # OU! Age contain missings! Almost 20% passengers excluded from modelling. This is really not good.
+
+### Advice:
+# Always check variables for missing values
+
+# Benchmark RMSE - Root Mean Square Deviation
+rmse <- function(model, data_set){
+  
+  predicted <- predict(model, data_set) # prediction of current model
+  observed <- data_set[, "survived"] # real target
+  
+  error <- predicted - observed # definition of RMSE
+  sqrt(mean(error^2, na.rm = TRUE))
+}
+
+# benchmark on training
+rmse(log_model_1, train_70)
+# benchmark on validation
+rmse(log_model_1, val_20)
+
+
+####### ***Features Exploration ***#############
 ######### Sex ###########
 ### Exercise:
 # How many men and women was there?
@@ -90,25 +117,13 @@ train_70 %>%
   ggplot(aes(x = sex)) +
   geom_bar()
 
-#### ***Modeling*** ####
-# This is our basic model from Underwriters
-log_model_1 <- glm(data = train_70,
-                   formula = survived ~ sex + age,
-                   family = binomial())
-
-# Information about model
-summary(log_model_1) # OU! Age contain missings! Almost 20% passengers excluded from modelling. This is really not good.
-
-### Advice:
-# Always check variables for missing values
-
 ######### Age ##############
 ### Exercise
 # What is the structure of the age? Which kind of people buy ticket to the boat? Do you see missing values?
 
 
 # Lets make a simple density plot with function density()
-train_70$age[!is.na(train_70$age)] %>% density() %>% plot
+
 
 ### Visualization
 # See trends, how old people usually had a claim?
@@ -146,22 +161,6 @@ rmse(log_model_2, train_70)
 # benchmark on validation
 rmse(log_model_2, val_20)
 
-# Benchmark RMSE - Root Mean Square Deviation
-rmse <- function(model, data_set){
-  
-  predicted <- predict(model, data_set) # prediction of current model
-  observed <- data_set[, "survived"] # real target
-  
-  error <- predicted - observed # definition of RMSE
-  sqrt(mean(error^2, na.rm = TRUE))
-}
-
-# benchmark on training
-rmse(log_model_1, train_70)
-# benchmark on validation
-rmse(log_model_1, val_20)
-
-
 ### Improving model by adding new feature
 
 ########## Fare #####
@@ -188,8 +187,10 @@ rmse(log_model_3, val_20)
 
 
 ### Exercise: 
-# What is the structure (density) of the fare for those who survived vs. not survived?
+# What is the structure (density) of the fare for those?
+# who survived 
 
+# vs. not survived
 
 ### Visualization
 # In one graph
@@ -256,7 +257,7 @@ unseen <- unseen[unseen$fare <= quantile(train_70$fare, 0.99), ]
 rmse(log_model_4, unseen) # great final evaluation is so different as training and validation evaluation
 
 # To update final model in the pricing app
-saveRDS(log_model_4, "data/model_final.rds")
+#saveRDS(log_model_4, "data/model_final.rds")
 
 # Running the pricing app
 shiny::shinyAppDir("./")

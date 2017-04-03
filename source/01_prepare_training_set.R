@@ -14,9 +14,6 @@ train <- read.csv("data/data_titanic_adj.csv", stringsAsFactors = FALSE)
 # glimpse is short description of table
 train %>% glimpse
 
-# changing age from double precision to integer
-train$age <- train$age %>% as.integer
-
 #### Training vs. Validation ####
 set.seed(58742) # to fix randomizer
 ind <- sample(3, nrow(train), replace=TRUE, prob=c(0.70, 0.20, 0.10)) # generate random indicator to split
