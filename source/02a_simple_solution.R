@@ -261,7 +261,7 @@ train_70_outliers_out %>%
 unseen <- train %>% filter(data_status=="Unseen")
 
 # Doing same adjustments as for train_70, age missings and capping/excluding outliers
-unseen[is.na(unseen$age)] <- 29
+unseen[is.na(unseen$age), "age"] <- 29
 unseen <- unseen[unseen$fare <= quantile(train_70$fare, 0.99), ]
 
 # Final evaluation

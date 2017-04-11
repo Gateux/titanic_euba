@@ -33,7 +33,7 @@ function(input, output, session) {
     paste(
       h4("Recommended price: "), 
       h3(
-        paste0("£", round(1 - prediction(), 3) * input$sum_insured) # price as sum insured * probability of having claim
+        paste0("GBP", round(1 - prediction(), 3) * input$sum_insured) # price as sum insured * probability of having claim
       )
     )
   })

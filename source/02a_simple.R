@@ -122,7 +122,7 @@ train_70 %>%
 # What is the structure of the age? Which kind of people buy ticket to the boat? Do you see missing values?
 
 
-# Lets make a simple density plot with function density()
+# Lets make a simple density plot with function density() and plot()
 
 
 ### Visualization
@@ -250,14 +250,14 @@ train_70_outliers_out %>%
 unseen <- train %>% filter(data_status=="Unseen")
 
 # Doing same adjustments as for train_70, age missings and capping/excluding outliers
-unseen[is.na(unseen$age)] <- 29
+unseen[is.na(unseen$age), 'age'] <- 29
 unseen <- unseen[unseen$fare <= quantile(train_70$fare, 0.99), ]
 
 # Final evaluation
 rmse(log_model_4, unseen) # great final evaluation is so different as training and validation evaluation
 
 # To update final model in the pricing app
-#saveRDS(log_model_4, "data/model_final.rds")
+saveRDS(log_model_4, "data/model_final.rds")
 
 # Running the pricing app
 shiny::shinyAppDir("./")
