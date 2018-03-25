@@ -2,13 +2,14 @@
 if (!require("dplyr")) install.packages("dplyr")
 if (!require("ggplot2")) install.packages("ggplot2")
 if (!require("shiny")) install.packages("shiny")
+if (!require("pROC")) install.packages("pROC")
 
 # Running the pricing app
 shiny::shinyAppDir("./")
 
 # VARIABLE DESCRIPTIONS:
-#   survival        Claim Status
-# (0 = Having a Claim; 1 = Not Having a Claim)
+#   claim        Claim Status
+# (0 = Not Having a Claim; 1 = Having a Claim)
 # pclass          Passenger Class
 # (1 = 1st; 2 = 2nd; 3 = 3rd)
 # sex             Sex
@@ -17,8 +18,8 @@ shiny::shinyAppDir("./")
 # parch           Number of Parents/Children Aboard
 # fare            Passenger Fare
 # embarked        Port of Embarkation
-# ship            Company ship number
 # (C = Cherbourg; Q = Queenstown; S = Southampton)
+# ship            Company ship number
 # 
 # SPECIAL NOTES:
 #   Pclass is a proxy for socio-economic status (SES)
@@ -47,25 +48,40 @@ shiny::shinyAppDir("./")
 # Why is it useful and more info about piping here:
 # https://cran.r-project.org/web/packages/magrittr/vignettes/magrittr.html
 
+# Load training data
+train <- read.csv("data/data_titanic_adj.csv", stringsAsFactors = FALSE)
+
 # Here we go, lets look at the variables in the table!
 # glimpse is short description of table
 train %>% glimpse
+
+#### Training vs. Validation ####
+set.seed(58742) # to fix randomizer
+ind <- sample(3, nrow(train), replace=TRUE, prob=c(0.70, 0.20, 0.10)) # generate random indicator to split
+
+train <- mutate(train,
+                data_status = ifelse(ind == 1, 
+                                     "Training",
+                                     ifelse(ind == 2, 
+                                            "Validation", 
+                                            "Unseen")
+                )
+)
 
 # Filtering training and validation set
 train_70 <- train %>% filter(data_status == "Training")
 val_20 <- train %>% filter(data_status == "Validation")
 
+train_70 %>% nrow
+val_20 %>% nrow
+
 ##### Target ########
 # How many people had a claim?
-train_70$survived %>% table # same as table(train_70$survived)
+train_70$claim %>% table # same as table(train_70$claim)
 
 ### Exercise:
-# Whats "survival ratio"?
-train_70$survived %>% mean
-
-### Exercise:
-# Which ship crashed?
-table(train_70$ship, train_70$survived)
+# Whats "probability of having claim"?
+train_70$claim %>% mean
 
 ####### ***Features Exploration ***##############
 ######### Sex ###########
@@ -79,21 +95,21 @@ train_70$sex %>% is.na %>% table
 
 ### Exercise:
 # Who has more claims, men or women?
-table(train_70$sex, train_70$survived)
+table(train_70$sex, train_70$claim)
 
 ### Visualization
 train_70 %>% 
-  ggplot(aes(x = sex,  y = factor(survived))) +
+  ggplot(aes(x = sex,  y = factor(claim))) +
   geom_jitter(alpha = 0.3)
 
 train_70 %>% 
-  ggplot(aes(x = sex)) +
-  geom_bar()
+  ggplot(aes(x = sex, fill = factor(claim))) +
+  geom_bar(position = position_fill())
 
 #### ***Modeling*** ####
 # This is our basic model from Underwriters
 log_model_1 <- glm(data = train_70,
-                   formula = survived ~ sex + age,
+                   formula = claim ~ sex + age,
                    family = binomial())
 
 # Information about model
@@ -101,6 +117,22 @@ summary(log_model_1) # OU! Age contain missings! Almost 20% passengers excluded 
 
 ### Advice:
 # Always check variables for missing values
+
+# Benchmark ROC - Receiver Operating Characteristic - higher better
+# more info why this:
+# https://en.wikipedia.org/wiki/Receiver_operating_characteristic
+roc_model <- function(model, data_set){
+  
+  predicted <- predict(model, data_set, type = "response") # prediction of current model
+  observed <- data_set[, "claim"] # real target
+  
+  pROC::auc(pROC::roc(observed, predicted))
+}
+
+# benchmark on training
+roc_model(log_model_1, train_70)
+# benchmark on validation
+roc_model(log_model_1, val_20)
 
 ######### Age ##############
 ### Exercise:
@@ -119,7 +151,7 @@ train_70$age[!is.na(train_70$age)] %>% density() %>% plot
 ### Visualization
 # See trends, how old people usually had a claim?
 train_70 %>% 
-  ggplot(aes(x = age,  color = factor(survived))) +
+  ggplot(aes(x = age,  color = factor(claim))) +
   geom_density() +
   theme_classic()
 
@@ -131,7 +163,7 @@ val_20$age[is.na(val_20$age)] <- mean(train_70$age, na.rm = TRUE)
 
 # See how it changed our density graph
 train_70 %>% 
-  ggplot(aes(x = age,  color = factor(survived))) +
+  ggplot(aes(x = age,  color = factor(claim))) +
   geom_density() +
   theme_classic()
 
@@ -142,31 +174,16 @@ train_70 %>%
 ### Exercise
 # Try model with new repaired variable
 log_model_2 <- glm(data = train_70,
-                   formula = survived ~ sex + age,
+                   formula = claim ~ sex + age,
                    family = binomial())
 
 # Information about model
 summary(log_model_2)
 
 # benchmark on training
-rmse(log_model_2, train_70)
+roc_model(log_model_2, train_70)
 # benchmark on validation
-rmse(log_model_2, val_20)
-
-# Benchmark RMSE - Root Mean Square Deviation
-rmse <- function(model, data_set){
-  
-  predicted <- predict(model, data_set) # prediction of current model
-  observed <- data_set[, "survived"] # real target
-  
-  error <- predicted - observed # definition of RMSE
-  sqrt(mean(error^2, na.rm = TRUE))
-}
-
-# benchmark on training
-rmse(log_model_1, train_70)
-# benchmark on validation
-rmse(log_model_1, val_20)
+roc_model(log_model_2, val_20)
 
 
 ### Improving model by adding new feature
@@ -175,16 +192,16 @@ rmse(log_model_1, val_20)
 ### Exercise:
 # Create model with Fare feature and calculate its benchmark metric
 log_model_3 <- glm(data = train_70,
-                   formula = survived ~ sex + age + fare,
+                   formula = claim ~ sex + age + fare,
                    family = binomial())
 
 # Information about model
 summary(log_model_3)
 
 # benchmark on training
-rmse(log_model_3, train_70)
+roc_model(log_model_3, train_70)
 # benchmark on validation
-rmse(log_model_3, val_20)
+roc_model(log_model_3, val_20)
 
 
 # What is the structure of the fare? Do you have some hyphothesis?
@@ -197,14 +214,14 @@ train_70$fare %>% is.na %>% table
 train_70$fare %>% density %>% plot
 
 ### Exercise: 
-# What is the structure (density) of the fare for those who survived vs. not survived?
-train_70[train_70$survived == 1, ]$fare %>% density %>% plot
-train_70[train_70$survived == 0, ]$fare %>% density %>% plot
+# What is the structure (density) of the fare for those who has claim vs. does not have claim?
+train_70[train_70$claim == 1, ]$fare %>% density %>% plot
+train_70[train_70$claim == 0, ]$fare %>% density %>% plot
 
 ### Visualization
 # In one graph
 train_70 %>% 
-  ggplot(aes(x = fare,  color = factor(survived))) +
+  ggplot(aes(x = fare,  color = factor(claim))) +
   geom_density() +
   theme_classic()
 
@@ -224,35 +241,46 @@ train_70 %>%
 
 # Capping
 train_70_cap <- train_70
-train_70_cap$fare[train_70_cap$fare >= quantile(train_70_cap$fare, 0.99)] <- quantile(train_70_cap$fare, 0.99)
+capped_value <- quantile(train_70_cap$fare, 0.99)
+train_70_cap$fare[train_70_cap$fare >= quantile(train_70_cap$fare, 0.99)] <- capped_value
 
 # Excluding outliers
 train_70_outliers_out <- train_70[train_70$fare <= quantile(train_70$fare, 0.99), ]
 
 # Exercise: Try both options: Capping/Excluding outliers, which one is better and why?
 # Model with adjusted Fare
-log_model_4 <- glm(data = train_70_outliers_out,
-                   formula = survived ~ sex + age + fare,
+log_model_4 <- glm(data = train_70_cap,
+                   formula = claim ~ sex + age + fare,
+                   family = binomial())
+  
+log_model_5 <- glm(data = train_70_outliers_out,
+                   formula = claim ~ sex + age + fare,
                    family = binomial())
   
 # Information about model
 summary(log_model_4)
+summary(log_model_5)
 
 # benchmark on training
-rmse(log_model_4, train_70)
+roc_model(log_model_4, train_70)
 # benchmark on validation
-rmse(log_model_4, val_20)
+roc_model(log_model_4, val_20)
+
+# benchmark on training
+roc_model(log_model_5, train_70)
+# benchmark on validation
+roc_model(log_model_5, val_20)
 
 ### Visualization
 # Capping
 train_70_cap %>% 
-  ggplot(aes(x = fare,  color = factor(survived))) +
+  ggplot(aes(x = fare,  color = factor(claim))) +
   geom_density() +
   theme_classic()
 
 # Excluding outliers
 train_70_outliers_out %>% 
-  ggplot(aes(x = fare,  color = factor(survived))) +
+  ggplot(aes(x = fare,  color = factor(claim))) +
   geom_density() +
   theme_classic()
 
@@ -261,11 +289,11 @@ train_70_outliers_out %>%
 unseen <- train %>% filter(data_status=="Unseen")
 
 # Doing same adjustments as for train_70, age missings and capping/excluding outliers
-unseen[is.na(unseen$age), "age"] <- 29
+unseen[is.na(unseen$age), "age"] <- mean(train_70$age, na.rm = TRUE)
 unseen <- unseen[unseen$fare <= quantile(train_70$fare, 0.99), ]
 
 # Final evaluation
-rmse(log_model_4, unseen) # great final evaluation is so different as training and validation evaluation
+roc_model(log_model_4, unseen) # great final evaluation is so different as training and validation evaluation
 
 # To update final model in the pricing app
 saveRDS(log_model_4, "data/model_final.rds")

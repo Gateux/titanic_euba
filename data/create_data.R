@@ -10,14 +10,18 @@ test <- titanic::titanic_test %>%
 
 set.seed(5987125)
 
-train_sample <- train %>% 
+train_sample <- train %>% select(-Survived) %>% 
   sample_n(9000, replace = TRUE) %>% 
-  mutate(Survived = 1, Ship = round(runif(9000, 1, 10))) 
+  mutate(Claim = 0, Ship = round(runif(9000, 1, 10))) 
   
-train_sample[train_sample$Ship == 7, "Survived"] <-
-  sample(train$Survived, nrow(train_sample[train_sample$Ship == 7, ]), replace = TRUE)
+train_sample[train_sample$Ship %in% c(7, 2), "Claim"] <-
+  sample(train$Survived, nrow(train_sample[train_sample$Ship %in% c(7, 2), ]), replace = TRUE)
 
-train <- rbind(train, train_sample)
+train <- rbind(train %>% 
+                 mutate(Claim = abs(Survived - 1)) %>% 
+                 select(-Survived), 
+               train_sample)
+
 rm(train_sample)
 
 names(train) <- names(train) %>% tolower
