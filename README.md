@@ -1,5 +1,5 @@
 # Feature Engineering in GLM 
-###Titanic s.r.o Exercise 
+### Titanic s.r.o Exercise 
 #### (or a few ways on how to improve GLM model)
  _This is one lessons (90 min) about GLM model a its improvements using technics not only from actuarial world._
  
